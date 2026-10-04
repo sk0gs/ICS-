@@ -1,41 +1,38 @@
-# Ask the user for the radius and convert it to an integer
-radius = int(input("Enter the radius of the circle: "))
+# get user input
+radius = int(input("Enter the radius for your circle: "))
 
-# Start y from the bottom of the circle (-radius)
+#y axis
+
 y = -radius
 
-# Keep looping as long as y is less than or equal to +radius
 while y <= radius:
 
-    # Start x from the left side of the circle (-radius)
+    #x axis
     x = -radius * 2
-
-    # Keep looping as long as x is less than or equal to +radius
+    
     while x <= radius * 2:
 
-        # Calculate x²
+#da formula
         x_squared = x * x
-
-        # Calculate y²
         y_squared = y * y
-
-        # Calculate radius²
         radius_squared = radius * radius
 
-        # Find how far this point is from the perfect circle
         difference = abs((x * x) // 4 + y * y - radius * radius)
 
-        # If the point is close enough to the circle, print a star
-        if difference <= radius:
-            print("*", end="")      # stay on the same line
-        else:
-            print(" ", end="")      # print space and stay on the same line
+# print the stars and shi
 
-        # Move to the next x position (go right)
+        if difference <= radius:  #this fucker prints the circle
+            print("*", end="")
+
+        else:
+            print(" ", end="")    #and this fucker prints the space
+
+    #god fucking damnit i fucking hate building this shitty ass circle
         x = x + 1
 
-    # After finishing one row, move down to the next line
     print()
 
-    # Move to the next y position (go up)
     y = y + 1
+
+
+
