@@ -50,7 +50,7 @@ section .data
         blue db 0x1B, '[34m'
         reset db 0x1B, '[0m'
 
-        RECdone db 0xA, 0xA, 'Done!. Returning to previous menu.', 0xA
+		RECdone db 0xA, 0xA, 'Done!. Returning to previous menu.', 0xA
         REClenDone equ $ - RECdone
 
 section .bss
@@ -59,10 +59,10 @@ section .bss
         RECwidth resb 3
         RECheight resb 3
         RECshape resb 2
-	RECalignment resb 2
+		RECalignment resb 2
         RECsymbol resb 4
         RECcolor resb 2
-	RECalign_count resb 1
+		RECalign_count resb 1
         RECrow resb 1
         RECcolumn resb 1
         RECcount resb 1
