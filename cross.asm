@@ -1,117 +1,212 @@
 bits 32
 
 section .bss
-    input   resb 16          ; buffer for user input
+    input   resb 16
 
 section .data
-    msg     db "Enter cross size (odd number, e.g. 5, 7, 9): ", 0
-    len     equ $ - msg - 1
+;da menu
+    menu        db 10, "========== SHAPE DRAWER ==========", 10
+                db "1. Cross", 10
+                db "2. Exit", 10
+                db "Enter choice (1-2): ", 0
+    menu_len    equ $ - menu - 1
+;cross size
+    size_msg    db "Enter cross size (odd number >= 3, e.g. 5, 7, 9): ", 10
+    size_len    equ $ - size_msg - 1
+;error message if user input invalid stuff
+    err_invalid db "Error: Invalid input. Please enter a positive odd integer >= 3.", 10, 0
+    err_len     equ $ - err_invalid - 1
 
-    star    db "* "
-    space   db "  "
-    newline db 10
+    err_choice  db "Error: Please choose 1 or 2.", 10, 0
+    err_choice_len equ $ - err_choice - 1
+;exit message
+    bye_msg     db "Goodbye!", 10, 0
+    bye_len     equ $ - bye_msg - 1
+;star and space
+    star        db "* "
+    space       db "  "
+    newline     db 10
 
 section .text
     global _start
 
 _start:
-    ; ----- 1. Print the prompt message -----
-    mov eax, 4              ; sys_write
-    mov ebx, 1              ; stdout
-    mov ecx, msg
-    mov edx, len
+menu_loop:
+;Show the menu
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, menu
+    mov edx, menu_len
     int 0x80
 
-    ; ----- 2. Read what the user types -----
-    mov eax, 3              ; sys_read
-    mov ebx, 0              ; stdin
-    mov ecx, input
-    mov edx, 16
+    call read_input
+    call convert_to_number          ; result in ebp
+
+    cmp ebp, 1
+    je  do_cross
+    cmp ebp, 2
+    je  exit_program
+
+;Invalid menu choice
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, err_choice
+    mov edx, err_choice_len
     int 0x80
+    jmp menu_loop
 
-    ; ----- 3. Convert input string into number (stored in ebp) -----
-    xor ebp, ebp            ; ebp will be 'size' (start at 0)
-    mov esi, input          ; pointer to input buffer
+;da cross
 
-convert:
-    movzx eax, byte [esi]
-    cmp al, 10              ; Enter key (newline)?
-    je done_convert
-    cmp al, '0'
-    jb done_convert
-    cmp al, '9'
-    ja done_convert
+do_cross:
+    call get_valid_size             
 
-    sub al, '0'             ; convert ASCII char to number
-    imul ebp, 10            ; size = size * 10
-    add ebp, eax            ; size = size + digit
-    inc esi
-    jmp convert
-
-done_convert:
-    ; ebp = size
-
-    ; ----- 4. Calculate mid = size / 2 -----
-    mov eax, ebp
-    xor edx, edx
-    mov ecx, 2
-    div ecx                 ; eax = size / 2
-    mov edi, eax            ; edi = mid
-
-    ; ----- 5. ROW LOOP (esi = row, from 0 to size - 1) -----
-    xor esi, esi            ; row = 0
-
+    xor esi, esi                   
 row_loop:
-    ; ----- 6. COL LOOP (ecx = col, from 0 to size - 1) -----
-    xor ecx, ecx            ; col = 0
-
+    xor ecx, ecx                    
 col_loop:
-    ; Check: if row == mid or col == mid
-    cmp esi, edi            ; is row == mid?
-    je print_star
-    cmp ecx, edi            ; is col == mid?
-    je print_star
+    cmp esi, edi                    
+    je  print_star
+    cmp ecx, edi                   
+    je  print_star
 
 print_space:
-    ; print "  "
-    mov eax, 4              ; sys_write
-    mov ebx, 1              ; stdout
-    mov edx, 2              ; 2 bytes
-    push ecx                ; save col loop counter
+    push ecx
+    mov eax, 4
+    mov ebx, 1
     mov ecx, space
+    mov edx, 2
     int 0x80
-    pop ecx                 ; restore col loop counter
+    pop ecx
     jmp next_col
 
 print_star:
-    ; print "* "
-    mov eax, 4              ; sys_write
-    mov ebx, 1              ; stdout
-    mov edx, 2              ; 2 bytes
-    push ecx                ; save col loop counter
+    push ecx
+    mov eax, 4
+    mov ebx, 1
     mov ecx, star
+    mov edx, 2
     int 0x80
-    pop ecx                 ; restore col loop counter
+    pop ecx
 
 next_col:
-    inc ecx                 ; col = col + 1
-    cmp ecx, ebp            ; while col < size
-    jl col_loop
+    inc ecx
+    cmp ecx, ebp
+    jl  col_loop
 
-    ; ----- End of row: print newline -----
-    mov eax, 4              ; sys_write
-    mov ebx, 1              ; stdout
+    ; newline
+    mov eax, 4
+    mov ebx, 1
     mov ecx, newline
     mov edx, 1
     int 0x80
 
-    ; ----- Next row -----
-    inc esi                 ; row = row + 1
-    cmp esi, ebp            ; while row < size
-    jl row_loop
+    inc esi
+    cmp esi, ebp
+    jl  row_loop
 
-    ; ----- 7. Exit program -----
-    mov eax, 1              ; sys_exit
+    jmp menu_loop                   ; back to menu after drawing
+
+
+; Keeps asking until a positive odd integer >= 3 is entered.
+; Returns: ebp = size, edi = mid (size/2)
+
+get_valid_size:
+size_prompt:
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, size_msg
+    mov edx, size_len
+    int 0x80
+
+    call read_input
+    call convert_to_number          ; ebp = number (0 if invalid)
+
+    ; Reject empty / non-numeric / zero
+    cmp ebp, 0
+    je  size_error
+
+    ; Reject < 3
+    cmp ebp, 3
+    jl  size_error
+
+    ; Reject even numbers
+    test ebp, 1
+    jz  size_error
+
+    ; Valid → compute mid
+    mov eax, ebp
+    xor edx, edx
+    mov ecx, 2
+    div ecx
+    mov edi, eax                    ; edi = mid
+    ret
+
+size_error:
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, err_invalid
+    mov edx, err_len
+    int 0x80
+    jmp size_prompt                 ; re-prompt
+
+;read user input
+read_input:
+    ; clear buffer
+    mov edi, input
+    mov ecx, 16
+    xor al, al
+    rep stosb
+
+    mov eax, 3                      ; sys_read
+    mov ebx, 0
+    mov ecx, input
+    mov edx, 15
+    int 0x80
+    ret
+
+
+; Converts digits → ebp. Returns 0 if no valid digits found.
+
+convert_to_number:
+    xor ebp, ebp
+    mov esi, input
+    xor ecx, ecx                    ; digit counter
+
+.convert_loop:
+    movzx eax, byte [esi]
+    cmp al, 10                      ; newline
+    je  .done
+    cmp al, 0
+    je  .done
+    cmp al, '0'
+    jb  .done
+    cmp al, '9'
+    ja  .done
+
+    sub al, '0'
+    imul ebp, 10
+    add ebp, eax
+    inc esi
+    inc ecx
+    jmp .convert_loop
+
+.done:
+    cmp ecx, 0
+    jne .ok
+    xor ebp, ebp                    ; force 0 on empty/letters
+.ok:
+    ret
+
+;exit
+
+exit_program:
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, bye_msg
+    mov edx, bye_len
+    int 0x80
+
+    mov eax, 1
     xor ebx, ebx
     int 0x80
 
