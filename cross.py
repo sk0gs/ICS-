@@ -1,6 +1,6 @@
 star = "*"
 
-# 2 user inputs: length (rows) and height (columns)
+
 print("Welcome to the cross shape (+) ")
 length = int(input("Enter da length : "))
 height = int(input("Enter da height : "))
