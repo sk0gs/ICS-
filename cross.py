@@ -1,9 +1,15 @@
 star = "*"
 
-
+# 2 user inputs: length (rows) and height (columns)
 print("Welcome to the cross shape (+) ")
-length = int(input("Enter da length : "))
-height = int(input("Enter da height : "))
+choice = int(input("Press (1) to continue and (2) to exit : "))
+if choice == 1:
+    
+    length = int(input("Enter da length : "))
+    height = int(input("Enter da height : "))
+else:
+    print("Good bye")
+    exit()
 
 # find the middle of each dimension
 mid_row = length // 2
@@ -18,6 +24,14 @@ for row in range(length):
             print(" ", end=" ")
 
     print()
+
+rewind = str(input("start again (Y/N) : "))
+
+if rewind == 'Y' or rewind == 'y':
+    exec(open(__file__).read())
+
+else:
+    print("Good bye")
 
 
 
